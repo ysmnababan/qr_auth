@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>QR Code from Go via Pusher</title>
+  <script src="https://js.pusher.com/7.0/pusher.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 50px;
+    }
+    img {
+      margin-top: 20px;
+      border: 2px solid #333;
+    }
+  </style>
+</head>
+<body>
+  <h1>QR Code from Go Backend</h1>
+  <p>Waiting for QR code...</p>
+  <div id="qr-container"></div>
+
+  <script>
+    // Replace with your Pusher credentials
+    const pusher = new Pusher("your-key", {
+      cluster: "your-cluster"
+    });
+
+    const channel = pusher.subscribe("qr_channel");
+
+    channel.bind("qr_event", function(data) {
+      const container = document.getElementById("qr-container");
+      container.innerHTML = ""; // Clear previous
+
+      const img = document.createElement("img");
+      img.src = data.qr_code;
+      img.alt = "QR Code";
+      img.width = 256;
+      img.height = 256;
+
+      container.appendChild(img);
+    });
+  </script>
+</body>
+</html>

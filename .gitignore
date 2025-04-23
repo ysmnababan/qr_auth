@@ -1,0 +1,55 @@
+/.idea
+/vendor
+/out
+/.vscode
+*.exe
+
+
+# env variable file
+/.env
+/.env.local
+/.env.development
+/.env.staging
+/.env.production
+/config.yml
+/secret
+/secret.yml
+.env
+
+
+
+# Node modules
+node_modules/
+
+# Build output
+dist/
+
+# Local env files
+.env
+.env.*.local
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# IDE/editor config
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Optional: Mac system files
+.AppleDouble
+.LSOverride
+
+# Optional: VS Code settings backup
+.history/
+
+# Optional: Vite cache
+.cache/
