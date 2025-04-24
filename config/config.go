@@ -5,14 +5,13 @@ import (
 	"qr_auth/pusherutil"
 	"qr_auth/redisutil"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/joho/godotenv"
 	"github.com/pusher/pusher-http-go/v5"
 )
 
 type Config struct {
 	PusherClient *pusher.Client
-	Redis        *redis.Client
+	Redis        *redisutil.RedisClient
 }
 
 var Cfg Config

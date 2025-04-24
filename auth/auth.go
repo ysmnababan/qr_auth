@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"context"
 	"encoding/base64"
 	"fmt"
 	"net/http"
@@ -27,6 +26,16 @@ const (
 	EVENT_LOGIN_QRCODE_PREFIX  = "qr_event:"
 )
 
+type AuthHandler struct {
+	cache redisutil.ICache
+}
+
+func NewAuthHandler(c *config.Config) *AuthHandler {
+	return &AuthHandler{
+		cache: c.Redis,
+	}
+}
+
 func generateQRCodeBase64(data string) (string, error) {
 	png, err := qrcode.Encode(data, qrcode.Medium, 256)
 	if err != nil {
@@ -36,11 +45,11 @@ func generateQRCodeBase64(data string) (string, error) {
 	return "data:image/png;base64," + base64Img, nil
 }
 
-func PushQRCodeToChannel(clientToken string) {
+func (h *AuthHandler) pushQRCodeToChannel(clientToken string) {
 	token := uuid.New().String()
 	redisKey := redisutil.REDIS_QR_LOGIN_PREFIX + token
 
-	err := config.Cfg.Redis.Set(context.Background(), redisKey, clientToken, REDIS_LOGIN_LIFETIME).Err()
+	err := h.cache.Set(redisKey, clientToken, REDIS_LOGIN_LIFETIME)
 	if err != nil {
 		panic(err)
 	}
@@ -66,7 +75,7 @@ func PushQRCodeToChannel(clientToken string) {
 	}
 }
 
-func SendQRLogin(c echo.Context) (err error) {
+func (h *AuthHandler) SendQRLogin(c echo.Context) (err error) {
 	clientToken := c.QueryParam("uuid")
 	if len(clientToken) == 0 {
 		return c.String(http.StatusBadRequest, "client token can't be empty")
@@ -75,7 +84,7 @@ func SendQRLogin(c echo.Context) (err error) {
 	go func() {
 		start := time.Now()
 		for {
-			PushQRCodeToChannel(clientToken)
+			h.pushQRCodeToChannel(clientToken)
 			if time.Since(start) > QR_LIFETIME {
 				return
 			}
@@ -89,15 +98,15 @@ func SendQRLogin(c echo.Context) (err error) {
 	})
 }
 
-func VerifyQRLogin(c echo.Context) (err error) {
+func (h *AuthHandler) VerifyQRLogin(c echo.Context) (err error) {
 	token := c.QueryParam("token")
 	redisKey := redisutil.REDIS_QR_LOGIN_PREFIX + token
 
 	// fetch the client token
-	clientToken, err := config.Cfg.Redis.Get(context.Background(), redisKey).Result()
+	clientToken, err := h.cache.Get(redisKey)
 	if err != nil {
 		return c.String(http.StatusInternalServerError, err.Error())
-	
+
 	}
 	fmt.Println("yey berhasil", clientToken)
 	newToken := "newToken"
@@ -113,7 +122,7 @@ func VerifyQRLogin(c echo.Context) (err error) {
 		return c.String(http.StatusInternalServerError, err.Error())
 	}
 
-	deleted, err := config.Cfg.Redis.Del(context.Background(), redisKey).Result()
+	deleted, err := h.cache.Delete(redisKey)
 	if err != nil {
 		log.Println(err)
 	}
