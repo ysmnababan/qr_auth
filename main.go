@@ -12,12 +12,12 @@ import (
 func main() {
 	config.Setup()
 	e := echo.New()
-	e.Use(middleware.CORS())
+	// e.Use(middleware.CORS())
 	// OR: Use custom CORS config (recommended for production)
-    // e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-    //     AllowOrigins: []string{"http://localhost:5173"}, // your frontend origin
-    //     AllowMethods: []string{echo.GET, echo.POST},
-    // }))
+    e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+        AllowOrigins: []string{"*"}, // your frontend origin
+        AllowMethods: []string{echo.GET, echo.POST},
+    }))
 	e.GET("/", func(c echo.Context) error {
 		return c.String(http.StatusOK, "Hello, World!")
 	})
