@@ -27,10 +27,4 @@ func Setup() {
 		PusherClient: pusherutil.NewPusherClient(),
 		Redis:        redisutil.NewRedisClient("localhost:6379", ""),
 	}
-
-	// data := map[string]string{"message": "hello world"}
-	// err = pusherClient.Trigger("my-channel", "my-event", data)
-	// if err != nil {
-	// fmt.Println(err.Error())
-	// }
 }
