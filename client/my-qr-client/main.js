@@ -1,17 +1,31 @@
 import Pusher from "pusher-js";
 
+let hasQRSentOnce = false
 // Event listener for "Start Login" button
 document.getElementById("start-login").addEventListener("click", async () => {
     try {
         // Hide the button when clicked
         const button = document.getElementById("start-login");
         button.style.display = "none";  // Hides the button
-
+        
         // Trigger the backend login process
-        const response = await fetch("http://localhost:1323/auth/qr-login", {
+        const clientToken = crypto.randomUUID();  // Generates a UUID v4
+        const baseURL = "https://d13e-125-161-205-3.ngrok-free.app"
+        const url = `${baseURL}/auth/qr-login?uuid=${encodeURIComponent(clientToken)}`;
+        console.log(url)
+        const response = await fetch(url, {
             method: "GET",
+            headers: {
+                'ngrok-skip-browser-warning': 'true', // This skips the ngrok warning page
+            },
         });
+        // const text = await response.text();  // ← Use this for now
+        // console.log("Raw response:", text);
 
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+    
         // Parse the JSON response (assuming backend sends QR code as part of response)
         const data = await response.json();  // Parse the JSON response
         console.log("QR Data received from backend:", data);
@@ -65,9 +79,8 @@ document.getElementById("start-login").addEventListener("click", async () => {
 
             container.appendChild(img);  // Append to the container
 
-
             // Listen for the success event (or poll for URL visit) to hide the QR code
-            channel.bind("login_success", (eventData) => {
+            channel.bind(`login_success:${clientToken}`, (eventData) => {
                 console.log("Login successful, hiding QR code...", eventData.status);
                 // Hide the QR code container
                 const container = document.getElementById("qr-container");
@@ -77,12 +90,17 @@ document.getElementById("start-login").addEventListener("click", async () => {
                 const messageContainer = document.getElementById("login-message");
                 messageContainer.innerHTML = "<p>Login successful!</p>";  // You can add more styling here
                 if (eventData.status === "true"){
+                    console.log(eventData.token)
+
                      // 👉 Unsubscribe from channel
                     pusher.unsubscribe("qr_channel");
 
                     // 👉 Disconnect Pusher connection
                     pusher.disconnect();
 
+                    pusher.connection.bind('connected', function() {
+                        console.log("Pusher connected!");
+                    });
                     setTimeout(() => {
                         window.location.href = "/dashboard.html";  // adjust path based on your setup
                       }, 100);
@@ -91,8 +109,8 @@ document.getElementById("start-login").addEventListener("click", async () => {
         } else {
             console.error("No QR code received from backend.");
         }
-    } catch (error) {
-        alert("Error starting login process.");
-        console.error(error);
+    }catch (error) {
+        alert("Error starting login process: " + error.message);
+        console.error("Fetch error:", error);
     }
 });

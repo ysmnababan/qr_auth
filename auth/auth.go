@@ -17,7 +17,7 @@ import (
 	"github.com/skip2/go-qrcode"
 )
 
-var baseURL = "https://663a-203-128-66-62.ngrok-free.app"
+var baseURL = "https://d13e-125-161-205-3.ngrok-free.app"
 
 func generateQRCodeBase64(data string) (string, error) {
 	png, err := qrcode.Encode(data, qrcode.Medium, 256)
@@ -30,10 +30,11 @@ func generateQRCodeBase64(data string) (string, error) {
 }
 
 func SendQRLogin(c echo.Context) (err error) {
+	clientToken := c.QueryParam("uuid")
 	token := uuid.New().String()
 	redisKey := redisutil.REDIS_QR_LOGIN_PREFIX + token
 
-	err = config.Cfg.Redis.Set(context.Background(), redisKey, "true", time.Minute*5).Err()
+	err = config.Cfg.Redis.Set(context.Background(), redisKey, clientToken, time.Minute*1).Err()
 	if err != nil {
 		panic(err)
 	}
@@ -54,29 +55,36 @@ func VerifyQRLogin(c echo.Context) (err error) {
 	token := c.QueryParam("token")
 	redisKey := redisutil.REDIS_QR_LOGIN_PREFIX + token
 
-	// Check if key exists
-	exists, err := config.Cfg.Redis.Exists(context.Background(), redisKey).Result()
+	// fetch the client token
+	clientToken, err := config.Cfg.Redis.Get(context.Background(), redisKey).Result()
+	// exists, err := config.Cfg.Redis.Exists(context.Background(), redisKey).Result()
 	if err != nil {
 		return c.String(http.StatusInternalServerError, err.Error())
 	}
-	fmt.Println("Key exists?", exists > 0)
-	if exists == 0 {
-		return c.String(http.StatusNotFound, "qr token is not found")
-	}
-	fmt.Println("yey berhasil")
+	// fmt.Println("Key exists?", exists > 0)
+	// if exists == 0 {
+	// return c.String(http.StatusNotFound, "qr token is not found")
+	// }
+	fmt.Println("yey berhasil", clientToken)
+	newToken := "newToken"
 	err = config.Cfg.PusherClient.Trigger(
 		pusherutil.QR_CHANNEL,
-		"login_success",
+		"login_success:"+clientToken,
 		map[string]string{
 			"status": "true",
+			"token":  newToken,
 		},
 	)
 	if err != nil {
 		return c.String(http.StatusInternalServerError, err.Error())
 	}
-	// delete the item
-	// create token
-	// send redirect link to channel
+
+	deleted, err := config.Cfg.Redis.Del(context.Background(), redisKey).Result()
+	if err != nil {
+		log.Println(err)
+	}
+
+	log.Println("deleted keys", deleted)
 	// disconnect client
 	return
 }
