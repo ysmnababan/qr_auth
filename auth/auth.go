@@ -27,12 +27,14 @@ const (
 )
 
 type AuthHandler struct {
-	cache redisutil.ICache
+	cache  redisutil.ICache
+	pusher pusherutil.IPusher
 }
 
 func NewAuthHandler(c *config.Config) *AuthHandler {
 	return &AuthHandler{
-		cache: c.Redis,
+		cache:  c.Redis,
+		pusher: c.PusherClient,
 	}
 }
 
@@ -62,7 +64,7 @@ func (h *AuthHandler) pushQRCodeToChannel(clientToken string) {
 		return
 	}
 
-	err = config.Cfg.PusherClient.Trigger(
+	err = h.pusher.Trigger(
 		pusherutil.QR_CHANNEL,
 		EVENT_LOGIN_QRCODE_PREFIX+clientToken,
 		map[string]string{
@@ -110,7 +112,7 @@ func (h *AuthHandler) VerifyQRLogin(c echo.Context) (err error) {
 	}
 	fmt.Println("yey berhasil", clientToken)
 	newToken := "newToken"
-	err = config.Cfg.PusherClient.Trigger(
+	err = h.pusher.Trigger(
 		pusherutil.QR_CHANNEL,
 		EVENT_LOGIN_SUCCESS_PREFIX+clientToken,
 		map[string]string{
