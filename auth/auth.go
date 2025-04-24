@@ -47,13 +47,14 @@ func generateQRCodeBase64(data string) (string, error) {
 	return "data:image/png;base64," + base64Img, nil
 }
 
-func (h *AuthHandler) pushQRCodeToChannel(clientToken string) {
+func (h *AuthHandler) pushQRCodeToChannel(clientToken string) error {
 	token := uuid.New().String()
 	redisKey := redisutil.REDIS_QR_LOGIN_PREFIX + token
 
 	err := h.cache.Set(redisKey, clientToken, REDIS_LOGIN_LIFETIME)
 	if err != nil {
-		panic(err)
+		log.Println(err)
+		return err
 	}
 	content := baseURL + "/auth/verify?token=" + token
 
@@ -61,7 +62,7 @@ func (h *AuthHandler) pushQRCodeToChannel(clientToken string) {
 	log.Println(content)
 	if err != nil {
 		log.Println(err)
-		return
+		return err
 	}
 
 	err = h.pusher.Trigger(
@@ -73,8 +74,9 @@ func (h *AuthHandler) pushQRCodeToChannel(clientToken string) {
 	)
 	if err != nil {
 		log.Println(err)
-		return
+		return err
 	}
+	return nil
 }
 
 func (h *AuthHandler) SendQRLogin(c echo.Context) (err error) {
@@ -86,7 +88,11 @@ func (h *AuthHandler) SendQRLogin(c echo.Context) (err error) {
 	go func() {
 		start := time.Now()
 		for {
-			h.pushQRCodeToChannel(clientToken)
+			err := h.pushQRCodeToChannel(clientToken)
+			if err != nil {
+				log.Println(err)
+				return
+			}
 			if time.Since(start) > QR_LIFETIME {
 				return
 			}
@@ -108,7 +114,6 @@ func (h *AuthHandler) VerifyQRLogin(c echo.Context) (err error) {
 	clientToken, err := h.cache.Get(redisKey)
 	if err != nil {
 		return c.String(http.StatusInternalServerError, err.Error())
-
 	}
 	fmt.Println("yey berhasil", clientToken)
 	newToken := "newToken"
@@ -131,5 +136,7 @@ func (h *AuthHandler) VerifyQRLogin(c echo.Context) (err error) {
 
 	log.Println("deleted keys", deleted)
 	// disconnect client
-	return
+	return c.JSON(http.StatusOK, map[string]string{
+		"message": "login success",
+	})
 }
