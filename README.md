@@ -8,11 +8,11 @@
 ## Setup Instructions
 
 ### 1. Environment Variables
-- Create a ` .env` file using [` .example.env`](./.example.env) as a template.
+- Create a ` .env` file using ` .example.env` as a template.
 - Update using the credential from you Pusher account
 - Do this for both:
-  - the main program
-  - the frontend located at [`client/my-qr-client`](./client/my-qr-client)
+  - the main program at [` .example.env`](./.example.env)
+  - the frontend located at [`client/my-qr-client/.example.env`](./client/my-qr-client/.example.env)
 
 ### 2. Start Redis with Docker
 Make sure Redis is running on the default port (6379). You can use the following Docker command:
