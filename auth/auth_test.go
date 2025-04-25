@@ -8,7 +8,9 @@ import (
 	mp "qr_auth/pusherutil/mocks"
 	"qr_auth/redisutil"
 	mr "qr_auth/redisutil/mocks"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
@@ -23,9 +25,12 @@ func TestPushQRCodeToChannel_Success(t *testing.T) {
 		cache:  mockRedis,
 		pusher: mockPush,
 	}
+	mockPush.Wg = &sync.WaitGroup{}
 
 	//assertion
+	mockPush.Wg.Add(1)
 	err := mockAuthHandler.pushQRCodeToChannel(mock.Anything)
+	mockPush.Wg.Wait()
 	assert.Nil(t, err)
 	assert.Equal(t, len(mockPush.TriggerCalls), 1)
 	assert.Equal(t, len(mockRedis.SetCalls), 1)
@@ -64,4 +69,36 @@ func TestVerifyQRLogin_Success(t *testing.T) {
 		assert.Equal(t, mockRedis.GetCalls[0], redisutil.REDIS_QR_LOGIN_PREFIX+token)
 		assert.Equal(t, mockRedis.DeleteCalls[0], redisutil.REDIS_QR_LOGIN_PREFIX+token)
 	}
+}
+
+func TestSendQRLogin(t *testing.T) {
+	// setup
+	e := echo.New()
+	q := make(url.Values)
+	token := "some-token"
+	q.Set("uuid", token)
+	req := httptest.NewRequest(http.MethodGet, "/?"+q.Encode(), nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	mockRedis := mr.NewMockCache()
+	mockPush := mp.NewMockPush()
+	mockPush.Wg = &sync.WaitGroup{}
+	qrInterval := 1
+	qrLifetime := 4
+	mockAuthHandler := &AuthHandler{
+		cache:      mockRedis,
+		pusher:     mockPush,
+		qrInterval: time.Duration(qrInterval) * time.Second,
+		qrLifetime: time.Duration(qrLifetime) * time.Second,
+	}
+
+	// assert
+	mockPush.Wg.Add(qrLifetime/qrInterval + 1)
+	err := mockAuthHandler.SendQRLogin(c)
+	mockPush.Wg.Wait()
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Contains(t, rec.Body.String(), "qr sent")
+	assert.Equal(t, len(mockPush.TriggerCalls), qrLifetime/qrInterval+1)
+	assert.Equal(t, len(mockRedis.SetCalls), qrLifetime/qrInterval+1)
 }
