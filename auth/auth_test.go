@@ -48,7 +48,7 @@ func TestVerifyQRLogin_Success(t *testing.T) {
 	c := e.NewContext(req, rec)
 	mockRedis := mr.NewMockCache()
 	mockPush := mp.NewMockPush()
-	mockRedis.Set(redisutil.REDIS_QR_LOGIN_PREFIX+token, clientToken, 0)
+	_ = mockRedis.Set(redisutil.REDIS_QR_LOGIN_PREFIX+token, clientToken, 0)
 	mockAuthHandler := &AuthHandler{
 		cache:  mockRedis,
 		pusher: mockPush,
