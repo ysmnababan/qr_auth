@@ -1,5 +1,6 @@
 import Pusher from "pusher-js";
 
+const baseURL = "https://d13e-125-161-205-3.ngrok-free.app" // CHANGE THIS
 let hasQRReceivedOnce = false
 
 // Pusher initialization
@@ -76,7 +77,6 @@ document.getElementById("start-login").addEventListener("click", async () => {
         button.style.display = "none";  // Hides the button
         
         // Trigger the backend login process
-        const baseURL = "https://d13e-125-161-205-3.ngrok-free.app"
         const url = `${baseURL}/auth/qr-login?uuid=${encodeURIComponent(clientToken)}`;
         console.log(url)
         const response = await fetch(url, {

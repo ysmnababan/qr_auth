@@ -16,7 +16,7 @@ import (
 	"github.com/skip2/go-qrcode"
 )
 
-var baseURL = "https://d13e-125-161-205-3.ngrok-free.app"
+var baseURL = "https://d13e-125-161-205-3.ngrok-free.app" // CHANGE THIS
 
 const (
 	QR_INTERVAL                = 30 * time.Second
