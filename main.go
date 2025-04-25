@@ -22,7 +22,7 @@ func main() {
 		return c.String(http.StatusOK, "Hello, World!")
 	})
 
-	authHandler := auth.NewAuthHandler(&config.Cfg)
+	authHandler := auth.NewAuthHandler(&config.Cfg, auth.QR_INTERVAL, auth.QR_LIFETIME)
 	e.GET("/auth/qr-login", authHandler.SendQRLogin)
 	e.GET("/auth/verify", authHandler.VerifyQRLogin)
 	e.Logger.Fatal(e.Start(":1323"))

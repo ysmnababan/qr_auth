@@ -27,14 +27,18 @@ const (
 )
 
 type AuthHandler struct {
-	cache  redisutil.ICache
-	pusher pusherutil.IPusher
+	cache      redisutil.ICache
+	pusher     pusherutil.IPusher
+	qrInterval time.Duration
+	qrLifetime time.Duration
 }
 
-func NewAuthHandler(c *config.Config) *AuthHandler {
+func NewAuthHandler(c *config.Config, interval, lifetime time.Duration) *AuthHandler {
 	return &AuthHandler{
-		cache:  c.Redis,
-		pusher: c.PusherClient,
+		cache:      c.Redis,
+		pusher:     c.PusherClient,
+		qrInterval: interval,
+		qrLifetime: lifetime,
 	}
 }
 
@@ -93,10 +97,10 @@ func (h *AuthHandler) SendQRLogin(c echo.Context) (err error) {
 				log.Println(err)
 				return
 			}
-			if time.Since(start) > QR_LIFETIME {
+			if time.Since(start) > h.qrLifetime {
 				return
 			}
-			time.Sleep(QR_INTERVAL)
+			time.Sleep(h.qrInterval)
 		}
 	}()
 
